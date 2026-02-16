@@ -1,0 +1,142 @@
+{
+    "author": "Grabber5.0",
+    "dependencies": {
+        "pebble-clay": "^1.0.3"
+    },
+    "keywords": [],
+    "name": "webos-clock-card",
+    "pebble": {
+        "capabilities": [
+            "configurable"
+        ],
+        "displayName": "webOS flip clock card",
+        "enableMultiJS": true,
+        "messageKeys": [
+            "DateFmt"
+        ],
+        "projectType": "native",
+        "resources": {
+            "media": [
+                {
+                    "file": "images/digit_blank",
+                    "name": "digit_blank",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/menu_image",
+                    "menuIcon": true,
+                    "name": "menu_image",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/digit-9.png",
+                    "name": "digit_9",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/digit-8.png",
+                    "name": "digit_8",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/digit-7.png",
+                    "name": "digit_7",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/digit-6.png",
+                    "name": "digit_6",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/digit-5.png",
+                    "name": "digit_5",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/digit-4.png",
+                    "name": "digit_4",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/digit-3.png",
+                    "name": "digit_3",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/digit-2.png",
+                    "name": "digit_2",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/digit-1.png",
+                    "name": "digit_1",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/digit-0.png",
+                    "name": "digit_0",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/webos_clock.png",
+                    "name": "webos_clock",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt"
+                    ],
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/webos_clock-emery.png",
+                    "name": "webos_clock",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/bluetooth-on.png",
+                    "name": "BT_ON",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/bluetooth-error.png",
+                    "name": "BT_ERROR",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/bluetooth-connected.png",
+                    "name": "BT_CONNECTED",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                }
+            ]
+        },
+        "sdkVersion": "3",
+        "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "emery"
+        ],
+        "uuid": "09382bfc-dc89-400f-b98c-db192dd02456",
+        "watchapp": {
+            "watchface": true
+        }
+    },
+    "version": "1.7.0"
+}
