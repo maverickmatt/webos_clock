@@ -191,6 +191,7 @@ static void main_window_load(Window *window) {
   //flap_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_WEBOS_PRELUDE_CONDENSED_30) );
   //status_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_WEBOS_PRELUDE_MEDIUM_12) );
   status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
+  //status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
 
   //background
   bmptr = gbitmap_create_with_resource(RESOURCE_ID_webos_clock);
@@ -225,7 +226,7 @@ static void main_window_load(Window *window) {
   btonptr = gbitmap_create_with_resource(RESOURCE_ID_BT_ON);
   bitmap_layer_set_bitmap(s_bt_conn_layer,btconnptr);
   
-  text_layer_set_text_color(s_long_date_layer, GColorLightGray);
+  text_layer_set_text_color(s_long_date_layer, GColorWhite);
   text_layer_set_background_color(s_long_date_layer, GColorClear);
   text_layer_set_font(s_long_date_layer, status_font);//fonts_get_system_font(FONT_KEY_GOTHIC_09));
   text_layer_set_text_alignment(s_long_date_layer, GTextAlignmentRight);
