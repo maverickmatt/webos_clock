@@ -12,7 +12,8 @@
         "displayName": "webOS flip clock card",
         "enableMultiJS": true,
         "messageKeys": [
-            "DateFmt"
+            "DateFmt",
+            "LargeFont"
         ],
         "projectType": "native",
         "resources": {

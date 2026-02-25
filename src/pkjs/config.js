@@ -25,6 +25,12 @@ module.exports = [
             "value": "1" 
           }
         ]
+      },
+      {
+        "type": "toggle",
+        "messageKey": "LargeFont",
+        "label": "Large font",
+        "defaultValue": true
       }
     ]
   },
