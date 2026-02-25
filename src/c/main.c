@@ -97,9 +97,12 @@ static void handle_second_tick(struct tm* tick_time, TimeUnits units_changed) {
   if (alt_date_fmt) {
     strftime(s_date_text, sizeof(s_date_text), "%d.%m.%y", tick_time);    
   } else {
-    //strftime(s_date_text, sizeof(s_date_text), "%D", tick_time);
-    strftime(s_date_text, sizeof(s_date_text), "%m/%d", tick_time);
-  }
+    #if PBL_DISPLAY_HEIGHT == 228  
+      strftime(s_date_text, sizeof(s_date_text), "%D", tick_time);
+    #else
+      strftime(s_date_text, sizeof(s_date_text), "%m/%d", tick_time);
+    #endif
+    }
   text_layer_set_text(s_date_layer, s_date_text);
 
   Layer *window_layer = window_get_root_layer(s_main_window);
