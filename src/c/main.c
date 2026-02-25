@@ -185,6 +185,14 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     handle_second_tick(current_time, MINUTE_UNIT);
     }
 
+  Tuple *msg_large_font = dict_find(iterator, MESSAGE_KEY_LargeFont);
+  if(msg_large_font) {
+    use_large_font = msg_large_font->value->int32 == 1;
+    APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "inbox_received_callback, use_large_font: ", use_large_font );
+    prv_save_settings(); //Persist new setting
+    //okay, now what? reload window?
+  }
+
 }
 
 static void main_window_load(Window *window) {
