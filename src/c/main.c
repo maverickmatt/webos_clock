@@ -216,12 +216,12 @@ static void main_window_load(Window *window) {
   layer_add_child(window_layer, bitmap_layer_get_layer(mblyr));
   
 #if PBL_DISPLAY_HEIGHT == 228
-  //always use large font for emery
-  use_large_font = true;
+  // //always use large font for emery
+  // use_large_font = true;
   status_layer_height = 18;
   weekday_pos_x = 106;
   weekday_pos_y = 68;
-  status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18); //perhaps configurable
+  status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18); 
   s_long_date_layer = text_layer_create(GRect(weekday_pos_x, weekday_pos_y, 40, status_layer_height));
   int8_t status_position_y = -4;  //-6 for gothic 18
   int8_t connection_position_y = 2;
@@ -238,11 +238,11 @@ static void main_window_load(Window *window) {
     status_position_y = -7;
     status_layer_height = 18;
     weekday_pos_y = 45;
-    status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18); //perhaps configurable
+    status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18); 
   } else {
     status_layer_height = 16;
     weekday_pos_y = 46;
-    status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14); //perhaps configurable
+    status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14); 
   }
   s_long_date_layer = text_layer_create(GRect(weekday_pos_x, weekday_pos_y, 40, status_layer_height));
   int8_t connection_position_y = -3;
@@ -440,8 +440,27 @@ static void prv_save_settings() {
 // Load the settings from persistent storage
 static void prv_load_settings() {
   APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "Loading settings..");
-  alt_date_fmt = persist_read_bool(SETTINGS_DATEFMT_KEY);
-  use_large_font = persist_read_bool(SETTINGS_LARGEFONT_KEY);
+  if (persist_exists(SETTINGS_DATEFMT_KEY)) {
+    alt_date_fmt = persist_read_bool(SETTINGS_DATEFMT_KEY);
+    APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "Found persisted setting for alt date fmt: ", alt_date_fmt );
+  } else {
+    //default value
+    alt_date_fmt = false;
+    APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "Using default setting for alt date fmt: ", alt_date_fmt );
+  }
+  if (persist_exists(SETTINGS_LARGEFONT_KEY)) {
+    use_large_font = persist_read_bool(SETTINGS_LARGEFONT_KEY);
+    APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "Found persisted setting for use_large_font: ", use_large_font );
+  } else {
+    //Only default to true for Emery, or always? Hmm...
+    #if PBL_DISPLAY_HEIGHT == 228
+      //always use large font for emery
+      use_large_font = true;
+    #else 
+      use_large_font = false; //?
+    #endif
+    APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "Using default value for use_large_font: ", use_large_font );
+  }
   APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "Loaded settings, Alt date fmt: ", alt_date_fmt );
   APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "Loaded settings, use_large_font: ", use_large_font );
 }
