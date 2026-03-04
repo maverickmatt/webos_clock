@@ -13,6 +13,7 @@ static uint8_t cal_icon_text_y;
 static uint8_t ampm_pos_x;
 static uint8_t ampm_pos_y;
 static uint8_t status_layer_height;
+static int8_t status_position_y = -5;
 static uint8_t weekday_pos_x;
 static uint8_t weekday_pos_y;
 
@@ -190,12 +191,52 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 
   Tuple *msg_large_font = dict_find(iterator, MESSAGE_KEY_LargeFont);
   if(msg_large_font) {
+    int tmp_large_font = use_large_font;
     use_large_font = msg_large_font->value->int32 == 1;
     APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "inbox_received_callback, use_large_font: ", use_large_font );
     prv_save_settings(); //Persist new setting
     //okay, now what? reload window?
+    //TODO: This isn't working, because window_load is where all of the resources are loaded, it it doesn't 
+    //get called when the window is marked dirty. Need to figure out how to move the dynamic code, and adjust
+    //the layers that need to be adjusted before they are repainted.
+    //APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "inbox_received_callback, calling mark dirty. " );
+    //layer_mark_dirty(window_get_root_layer(s_main_window));
+    if (tmp_large_font != use_large_font) {
+      update_font_size();
+    }
+    //APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "inbox_received_callback, called mark dirty. " );
   }
 
+}
+
+static void update_font_size() {
+      APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "font size changed");
+      //toggle font size
+      if (use_large_font) {
+        APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "loading large font");
+        status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
+
+        //reset sizes - need common func for layout I guess
+        status_position_y = -7;
+        status_layer_height = 18;
+        weekday_pos_y = 45;
+        //yeah nah (well, hanlde_tick does it.. so?)
+        Layer *window_layer = window_get_root_layer(s_main_window);
+        GRect bounds = layer_get_frame(window_layer);
+
+        text_layer_set_font(s_date_layer, status_font);
+        layer_set_frame((Layer*)s_date_layer,GRect(0, status_position_y, bounds.size.w, status_layer_height));
+        //text_layer_set_size(s_date_layer, text_layer_get_content_size(s_date_layer)); //status_layer_height  
+      } else {
+        APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "loading small font");
+        //unload old font, load new font, set layer font, update?
+        status_position_y = -5;
+        status_layer_height = 16;
+        weekday_pos_y = 46;
+        status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
+        text_layer_set_font(s_date_layer, status_font);
+
+      }
 }
 
 static void main_window_load(Window *window) {
@@ -223,7 +264,7 @@ static void main_window_load(Window *window) {
   weekday_pos_y = 68;
   status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18); 
   s_long_date_layer = text_layer_create(GRect(weekday_pos_x, weekday_pos_y, 40, status_layer_height));
-  int8_t status_position_y = -4;  //-6 for gothic 18
+  status_position_y = -4;  //-6 for gothic 18
   int8_t connection_position_y = 2;
   s_bt_conn_layer = bitmap_layer_create(GRect(bounds.size.w - 14, 1, 13, 12)); //was 130
   cal_icon_text_x = 127;
@@ -231,7 +272,7 @@ static void main_window_load(Window *window) {
   ampm_pos_x = 53;
   ampm_pos_y = 126;
 #else
-  int8_t status_position_y = -5;
+  status_position_y = -5;
   weekday_pos_x = 66;
   //use_large_font = true; //grrr
   if (use_large_font) {
