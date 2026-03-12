@@ -5,12 +5,16 @@ static Window *s_main_window;
 
 //ClaySettings settings;
 static bool alt_date_fmt = false;
+static bool use_large_font = false;
 
 //layout changes for different size screens
 static uint8_t cal_icon_text_x;
 static uint8_t cal_icon_text_y;
 static uint8_t ampm_pos_x;
 static uint8_t ampm_pos_y;
+static uint8_t status_layer_height;
+static uint8_t weekday_pos_x;
+static uint8_t weekday_pos_y;
 
 static TextLayer *s_long_date_layer;
 static TextLayer *s_date_layer;
@@ -93,8 +97,12 @@ static void handle_second_tick(struct tm* tick_time, TimeUnits units_changed) {
   if (alt_date_fmt) {
     strftime(s_date_text, sizeof(s_date_text), "%d.%m.%y", tick_time);    
   } else {
-    strftime(s_date_text, sizeof(s_date_text), "%D", tick_time);
-  }
+    #if PBL_DISPLAY_HEIGHT == 228  
+      strftime(s_date_text, sizeof(s_date_text), "%D", tick_time);
+    #else
+      strftime(s_date_text, sizeof(s_date_text), "%m/%d", tick_time);
+    #endif
+    }
   text_layer_set_text(s_date_layer, s_date_text);
 
   Layer *window_layer = window_get_root_layer(s_main_window);
@@ -180,6 +188,14 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     handle_second_tick(current_time, MINUTE_UNIT);
     }
 
+  Tuple *msg_large_font = dict_find(iterator, MESSAGE_KEY_LargeFont);
+  if(msg_large_font) {
+    use_large_font = msg_large_font->value->int32 == 1;
+    APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "inbox_received_callback, use_large_font: ", use_large_font );
+    prv_save_settings(); //Persist new setting
+    //okay, now what? reload window?
+  }
+
 }
 
 static void main_window_load(Window *window) {
@@ -187,10 +203,10 @@ static void main_window_load(Window *window) {
   GRect bounds = layer_get_frame(window_layer);
 
   APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "main_window_load, Alt date fmt: ", alt_date_fmt );
+  APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "main_window_load, use_large_font: ", use_large_font );
   
   //flap_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_WEBOS_PRELUDE_CONDENSED_30) );
   //status_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_WEBOS_PRELUDE_MEDIUM_12) );
-  status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
   //status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
 
   //background
@@ -200,8 +216,14 @@ static void main_window_load(Window *window) {
   layer_add_child(window_layer, bitmap_layer_get_layer(mblyr));
   
 #if PBL_DISPLAY_HEIGHT == 228
-  s_long_date_layer = text_layer_create(GRect(106, 70, 40, 16));
-  int8_t status_position_y = -2;  //-6 for gothic 18
+  // //always use large font for emery
+  // use_large_font = true;
+  status_layer_height = 18;
+  weekday_pos_x = 106;
+  weekday_pos_y = 68;
+  status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18); 
+  s_long_date_layer = text_layer_create(GRect(weekday_pos_x, weekday_pos_y, 40, status_layer_height));
+  int8_t status_position_y = -4;  //-6 for gothic 18
   int8_t connection_position_y = 2;
   s_bt_conn_layer = bitmap_layer_create(GRect(bounds.size.w - 14, 1, 13, 12)); //was 130
   cal_icon_text_x = 127;
@@ -209,15 +231,27 @@ static void main_window_load(Window *window) {
   ampm_pos_x = 53;
   ampm_pos_y = 126;
 #else
-  s_long_date_layer = text_layer_create(GRect(66, 46, 40, 16));
   int8_t status_position_y = -5;
+  weekday_pos_x = 66;
+  //use_large_font = true; //grrr
+  if (use_large_font) {
+    status_position_y = -7;
+    status_layer_height = 18;
+    weekday_pos_y = 45;
+    status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18); 
+  } else {
+    status_layer_height = 16;
+    weekday_pos_y = 46;
+    status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14); 
+  }
+  s_long_date_layer = text_layer_create(GRect(weekday_pos_x, weekday_pos_y, 40, status_layer_height));
   int8_t connection_position_y = -3;
   s_bt_conn_layer = bitmap_layer_create(GRect(bounds.size.w - 14, -1, 13, 12)); //was 130
   cal_icon_text_x = 91;
   cal_icon_text_y = bounds.size.h-23;
   //  s_ampm_layer = text_layer_create(GRect(38, 92, 16, 16));
   ampm_pos_x = 38;
-  ampm_pos_y = 92;
+  ampm_pos_y = 93;
 #endif
 
   //bluetooth status
@@ -231,14 +265,14 @@ static void main_window_load(Window *window) {
   text_layer_set_font(s_long_date_layer, status_font);//fonts_get_system_font(FONT_KEY_GOTHIC_09));
   text_layer_set_text_alignment(s_long_date_layer, GTextAlignmentRight);
   
-  s_date_layer = text_layer_create(GRect(0, status_position_y, bounds.size.w, 16));
+  s_date_layer = text_layer_create(GRect(0, status_position_y, bounds.size.w, status_layer_height));
   text_layer_set_text_color(s_date_layer, GColorWhite);
   text_layer_set_background_color(s_date_layer, GColorClear);
   text_layer_set_font(s_date_layer, status_font);//fonts_get_system_font(FONT_KEY_GOTHIC_09));
   text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
 
   //s_cal_icon_layer = text_layer_create(GRect(89, bounds.size.h-19, 12, 11));//For 9 pt Gothic
-  s_cal_icon_layer = text_layer_create(GRect(cal_icon_text_x, cal_icon_text_y, 12, 14));
+  s_cal_icon_layer = text_layer_create(GRect(cal_icon_text_x, cal_icon_text_y, 12, 16));
   text_layer_set_text_color(s_cal_icon_layer, GColorBlack);
   text_layer_set_background_color(s_cal_icon_layer, GColorClear);
   text_layer_set_font(s_cal_icon_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
@@ -309,14 +343,14 @@ static void main_window_load(Window *window) {
   text_layer_set_text_alignment(s_connection_layer, GTextAlignmentLeft);
   handle_bluetooth(connection_service_peek_pebble_app_connection());
 
-  s_battery_layer = text_layer_create(GRect(0, status_position_y, bounds.size.w -14, 16));
+  s_battery_layer = text_layer_create(GRect(0, status_position_y, bounds.size.w -14, status_layer_height));
   text_layer_set_text_color(s_battery_layer, GColorWhite);
   text_layer_set_background_color(s_battery_layer, GColorBlack);
   text_layer_set_font(s_battery_layer, status_font); //fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_alignment(s_battery_layer, GTextAlignmentRight);
   text_layer_set_text(s_battery_layer, "--");
 
-  s_status_layer = text_layer_create(GRect(5, status_position_y, 75, 16));
+  s_status_layer = text_layer_create(GRect(5, status_position_y, 75, status_layer_height));
   text_layer_set_text_color(s_status_layer, GColorWhite);
   text_layer_set_background_color(s_status_layer, GColorBlack);
   text_layer_set_font(s_status_layer, status_font); //fonts_get_system_font(FONT_KEY_GOTHIC_14));
@@ -398,14 +432,37 @@ static void main_window_unload(Window *window) {
 static void prv_save_settings() {
   //persist_write_data(SETTINGS_KEY, &settings, sizeof(settings));
   persist_write_bool(SETTINGS_DATEFMT_KEY, alt_date_fmt);
+  persist_write_bool(SETTINGS_LARGEFONT_KEY, use_large_font);
   APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "Saved settings, Alt date fmt: ", alt_date_fmt );
+  APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "Saved settings, use_large_font: ", use_large_font );
 }
 
 // Load the settings from persistent storage
 static void prv_load_settings() {
   APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "Loading settings..");
-  alt_date_fmt = persist_read_bool(SETTINGS_DATEFMT_KEY);
+  if (persist_exists(SETTINGS_DATEFMT_KEY)) {
+    alt_date_fmt = persist_read_bool(SETTINGS_DATEFMT_KEY);
+    APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "Found persisted setting for alt date fmt: ", alt_date_fmt );
+  } else {
+    //default value
+    alt_date_fmt = false;
+    APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "Using default setting for alt date fmt: ", alt_date_fmt );
+  }
+  if (persist_exists(SETTINGS_LARGEFONT_KEY)) {
+    use_large_font = persist_read_bool(SETTINGS_LARGEFONT_KEY);
+    APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "Found persisted setting for use_large_font: ", use_large_font );
+  } else {
+    //Only default to true for Emery, or always? Hmm...
+    #if PBL_DISPLAY_HEIGHT == 228
+      //always use large font for emery
+      use_large_font = true;
+    #else 
+      use_large_font = false; //?
+    #endif
+    APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "Using default value for use_large_font: ", use_large_font );
+  }
   APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "Loaded settings, Alt date fmt: ", alt_date_fmt );
+  APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "Loaded settings, use_large_font: ", use_large_font );
 }
 
 static void init() {
