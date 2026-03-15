@@ -201,8 +201,9 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     //the layers that need to be adjusted before they are repainted.
     //APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "inbox_received_callback, calling mark dirty. " );
     //layer_mark_dirty(window_get_root_layer(s_main_window));
+    //mw 3/14 enable this after restarting work on large font branch
     if (tmp_large_font != use_large_font) {
-      update_font_size();
+//      update_font_size();
     }
     //APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "inbox_received_callback, called mark dirty. " );
   }
