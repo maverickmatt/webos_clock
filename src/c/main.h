@@ -5,3 +5,4 @@
 
 static void prv_save_settings();
 static void prv_load_settings();
+static void update_font_size();

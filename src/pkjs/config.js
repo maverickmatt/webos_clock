@@ -28,6 +28,7 @@ module.exports = [
       },
       {
         "type": "toggle",
+        "capabilities": [ "DISPLAY_144x168" ],
         "messageKey": "LargeFont",
         "label": "Large font",
         "defaultValue": true
