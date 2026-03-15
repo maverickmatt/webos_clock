@@ -100,7 +100,11 @@ static void handle_second_tick(struct tm* tick_time, TimeUnits units_changed) {
     #if PBL_DISPLAY_HEIGHT == 228  
       strftime(s_date_text, sizeof(s_date_text), "%D", tick_time);
     #else
-      strftime(s_date_text, sizeof(s_date_text), "%m/%d", tick_time);
+      if (use_large_font) {
+        strftime(s_date_text, sizeof(s_date_text), "%m/%d", tick_time);
+      } else {
+        strftime(s_date_text, sizeof(s_date_text), "%D", tick_time);
+      }
     #endif
     }
   text_layer_set_text(s_date_layer, s_date_text);
