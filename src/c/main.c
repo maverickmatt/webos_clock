@@ -59,8 +59,17 @@ static void handle_battery(BatteryChargeState charge_state) {
 
   if (charge_state.is_charging) {
     snprintf(battery_text, sizeof(battery_text), "+%d%%", charge_state.charge_percent);
+//    text_layer_set_text_color(s_battery_layer, GColorWhite);
   } else {
     snprintf(battery_text, sizeof(battery_text), "%d%%", charge_state.charge_percent);
+    // Commented out, because the colors aren't distinct enough.
+    // if (charge_state.charge_percent <= 40) {
+    //   text_layer_set_text_color(s_battery_layer, GColorRed);
+    // } else if (charge_state.charge_percent <= 50) {
+    //   text_layer_set_text_color(s_battery_layer, GColorYellow);
+    // } else {
+    //   text_layer_set_text_color(s_battery_layer, GColorWhite);
+    // }
   }
   text_layer_set_text(s_battery_layer, battery_text);
 }
