@@ -14,19 +14,20 @@ static uint8_t ampm_pos_x;
 static uint8_t ampm_pos_y;
 static uint8_t status_layer_height;
 static int8_t status_position_y = -5;
+static int8_t connection_position_y = -1;
+
 static uint8_t weekday_pos_x;
 static uint8_t weekday_pos_y;
+static uint8_t offset_x = 0;
+static uint8_t offset_y = 16;
 
 static TextLayer *s_long_date_layer;
 static TextLayer *s_date_layer;
 static TextLayer *s_cal_icon_layer;
-//static TextLayer *s_time_layer;
 static TextLayer *s_ampm_layer;
 static TextLayer *s_status_layer;
 static TextLayer *s_battery_layer;
-static TextLayer *s_connection_layer;
 static BitmapLayer *s_bt_conn_layer;
-//static BitmapLayer *s_bt_err_layer;
 static BitmapLayer *mblyr;
 static GBitmap *bmptr;
 static GBitmap *btconnptr;
@@ -163,7 +164,6 @@ static void handle_second_tick(struct tm* tick_time, TimeUnits units_changed) {
 }
 
 static void handle_bluetooth(bool connected) {
-  text_layer_set_text(s_connection_layer, connected ? "*" : "-");
   if (connected) {
     bitmap_layer_set_bitmap(s_bt_conn_layer,btconnptr);
   } else {
@@ -175,33 +175,6 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 
   // Prefix is added automatically and helps distinguish a key from a local variable
   
-  // Read boolean preferences
-/*
-  Tuple *date_fmt_val1 = dict_find(iterator, MESSAGE_KEY_DateFormat);
-  if(date_fmt_val1) {
-    alt_date_fmt = date_fmt_val1->value->int32 == 1;
-    APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "inbox_received_callback, Alt date fmt: ", alt_date_fmt );
-    prv_save_settings(); //Persist new setting
-    
-    time_t now = time(NULL);
-    struct tm *current_time = localtime(&now);
-    handle_second_tick(current_time, MINUTE_UNIT);
-  }
-*/
-  Tuple *date_fmt_val = dict_find(iterator, MESSAGE_KEY_DateFmt);
-  if(date_fmt_val) {
-    char *my_string_value = date_fmt_val->value->cstring;
-    APP_LOG(APP_LOG_LEVEL_INFO, "DateFmt Config value: %s", my_string_value);
-    APP_LOG(APP_LOG_LEVEL_INFO, "DateFmt Config converted value: %i", atoi(my_string_value));
-    alt_date_fmt = atoi(my_string_value) == 1;
-    APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "inbox_received_callback, Alt date fmt: ", alt_date_fmt );
-    prv_save_settings(); //Persist new setting
-    
-    time_t now = time(NULL);
-    struct tm *current_time = localtime(&now);
-    handle_second_tick(current_time, MINUTE_UNIT);
-    }
-
   Tuple *msg_large_font = dict_find(iterator, MESSAGE_KEY_LargeFont);
   if(msg_large_font) {
     int tmp_large_font = use_large_font;
@@ -216,45 +189,246 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     //layer_mark_dirty(window_get_root_layer(s_main_window));
     //mw 3/14 enable this after restarting work on large font branch
     if (tmp_large_font != use_large_font) {
-//      update_font_size();
+      update_layout();
     }
-    //APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "inbox_received_callback, called mark dirty. " );
+  }
+  
+  Tuple *date_fmt_val = dict_find(iterator, MESSAGE_KEY_DateFmt);
+  if(date_fmt_val) {
+    char *my_string_value = date_fmt_val->value->cstring;
+    APP_LOG(APP_LOG_LEVEL_INFO, "DateFmt Config value: %s", my_string_value);
+    APP_LOG(APP_LOG_LEVEL_INFO, "DateFmt Config converted value: %i", atoi(my_string_value));
+    alt_date_fmt = atoi(my_string_value) == 1;
+    APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "inbox_received_callback, Alt date fmt: ", alt_date_fmt );
+    prv_save_settings(); //Persist new setting
+    
+    time_t now = time(NULL);
+    struct tm *current_time = localtime(&now);
+    handle_second_tick(current_time, MINUTE_UNIT);
   }
 
 }
 
-static void update_font_size() {
-      APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "font size changed");
-      //toggle font size
-      if (use_large_font) {
-        APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "loading large font");
-        status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
+//Set layout based on display size, config settings
+static void set_layout() {
+  APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "font size changed");
 
-        //reset sizes - need common func for layout I guess
-        status_position_y = -7;
-        status_layer_height = 18;
-        weekday_pos_y = 45;
-        //yeah nah (well, hanlde_tick does it.. so?)
-        Layer *window_layer = window_get_root_layer(s_main_window);
-        GRect bounds = layer_get_frame(window_layer);
+  Layer *window_layer = window_get_root_layer(s_main_window);
+  GRect bounds = layer_get_frame(window_layer);
+      
+#if PBL_DISPLAY_HEIGHT == 228
+  //PT2
+  status_layer_height = 18;
+  weekday_pos_x = 106;
+  weekday_pos_y = 68;
+  status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18); 
+  status_position_y = -4;  //-6 for gothic 18
+  connection_position_y = 1;
+  cal_icon_text_x = 127;
+  cal_icon_text_y = bounds.size.h-27;
+  ampm_pos_x = 53;
+  ampm_pos_y = 126;
+  offset_x = 25;
+  offset_y = 22;
+#elif PBL_DISPLAY_HEIGHT == 180
+  //PTR
+  status_position_y = -1;
+  weekday_pos_x = 97;
+  if (use_large_font) {
+    status_position_y = -4;
+    status_layer_height = 18;
+    weekday_pos_y = 44;
+    status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18); 
+  } else {
+    status_layer_height = 16;
+    weekday_pos_y = 46;
+    status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14); 
+  }
+  connection_position_y = -1;
+  cal_icon_text_x = 91;
+  cal_icon_text_y = bounds.size.h;//-23; //Push off screen until I figure out how to hide for PTR
+  ampm_pos_x = 44;
+  ampm_pos_y = 102;
+  offset_x = 0;
+  offset_y = 63;
+#else
+  //OG, Steel, PT, PTS, P2
+  status_position_y = -5;
+  weekday_pos_x = 66;
+  if (use_large_font) {
+    status_position_y = -7;
+    status_layer_height = 18;
+    weekday_pos_y = 45;
+    status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18); 
+  } else {
+    status_layer_height = 16;
+    weekday_pos_y = 46;
+    status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14); 
+  }
+  connection_position_y = -1;
+  cal_icon_text_x = 91;
+  cal_icon_text_y = bounds.size.h-23;
+  ampm_pos_x = 38;
+  ampm_pos_y = 93;
+  offset_x = 0;
+  offset_y = 0;
+#endif
 
-        text_layer_set_font(s_date_layer, status_font);
-        layer_set_frame((Layer*)s_date_layer,GRect(0, status_position_y, bounds.size.w, status_layer_height));
-        //text_layer_set_size(s_date_layer, text_layer_get_content_size(s_date_layer)); //status_layer_height  
-      } else {
-        APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "loading small font");
-        //unload old font, load new font, set layer font, update?
-        status_position_y = -5;
-        status_layer_height = 16;
-        weekday_pos_y = 46;
-        status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
-        text_layer_set_font(s_date_layer, status_font);
-
-      }
 }
 
-static void main_window_load(Window *window) {
-  Layer *window_layer = window_get_root_layer(window);
+//Move all layout stuff here. Easy, right?
+static void update_layout() {
+  APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "font size changed");
+  set_layout();
+
+  Layer *window_layer = window_get_root_layer(s_main_window);
+  GRect bounds = layer_get_frame(window_layer);
+      
+  layer_set_frame((Layer*)s_bt_conn_layer,GRect(bounds.size.w - 14, connection_position_y, 13, 12));
+
+  //layer_set_frame((Layer*)s_long_date_layer,GRect(weekday_pos_x, weekday_pos_y, 40, status_layer_height));
+  layer_set_frame((Layer*)s_long_date_layer,GRect(weekday_pos_x, weekday_pos_y, 40, status_layer_height));
+  text_layer_set_font(s_long_date_layer, status_font);
+  
+  //layer_set_frame((Layer*)s_date_layer,GRect(0, status_position_y, bounds.size.w, status_layer_height));
+  layer_set_frame((Layer*)s_date_layer,GRect(0, status_position_y, bounds.size.w, status_layer_height));
+  text_layer_set_font(s_date_layer, status_font);
+
+  layer_set_frame((Layer*)s_cal_icon_layer,GRect(cal_icon_text_x, cal_icon_text_y, 12, 16));
+  text_layer_set_font(s_cal_icon_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+ 
+  layer_set_frame((Layer*)s_ampm_layer,GRect(ampm_pos_x, ampm_pos_y, 16, 16));
+  
+  layer_set_frame((Layer*)s_battery_layer,GRect(0, status_position_y, bounds.size.w -14, status_layer_height));
+  text_layer_set_font(s_battery_layer, status_font); //fonts_get_system_font(FONT_KEY_GOTHIC_14));
+
+  layer_set_frame((Layer*)s_status_layer,GRect(5, status_position_y, 75, status_layer_height));
+  text_layer_set_font(s_status_layer, status_font); //fonts_get_system_font(FONT_KEY_GOTHIC_14));
+}
+
+static void create_display() {
+  APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "create_display called");
+
+  Layer *window_layer = window_get_root_layer(s_main_window);
+  GRect bounds = layer_get_frame(window_layer);
+
+  APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "main_window_load, Alt date fmt: ", alt_date_fmt );
+  APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "main_window_load, use_large_font: ", use_large_font );
+  
+  //background
+  bmptr = gbitmap_create_with_resource(RESOURCE_ID_webos_clock);
+  mblyr = bitmap_layer_create(bounds);
+  bitmap_layer_set_bitmap(mblyr,bmptr);
+  layer_add_child(window_layer, bitmap_layer_get_layer(mblyr));
+
+  set_layout();
+
+// #if PBL_DISPLAY_HEIGHT == 228
+//   status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18); 
+// #elif PBL_DISPLAY_HEIGHT == 180
+//   if (use_large_font) {
+//     status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18); 
+//   } else {
+//     status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14); 
+//   }
+// #else
+//   if (use_large_font) {
+//     status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18); 
+//   } else {
+//     status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14); 
+//   }
+// #endif
+  s_long_date_layer = text_layer_create(GRect(weekday_pos_x, weekday_pos_y, 40, status_layer_height));
+  s_bt_conn_layer = bitmap_layer_create(GRect(bounds.size.w - 14, connection_position_y, 13, 12));
+
+  //bluetooth status
+  btconnptr = gbitmap_create_with_resource(RESOURCE_ID_BT_CONNECTED);
+  bterrptr = gbitmap_create_with_resource(RESOURCE_ID_BT_ERROR);
+  btonptr = gbitmap_create_with_resource(RESOURCE_ID_BT_ON);
+  bitmap_layer_set_bitmap(s_bt_conn_layer,btconnptr);
+  
+  text_layer_set_text_color(s_long_date_layer, GColorWhite);
+  text_layer_set_background_color(s_long_date_layer, GColorClear);
+  text_layer_set_font(s_long_date_layer, status_font);
+  text_layer_set_text_alignment(s_long_date_layer, GTextAlignmentRight);
+  
+  s_date_layer = text_layer_create(GRect(0, status_position_y, bounds.size.w, status_layer_height));
+  text_layer_set_text_color(s_date_layer, GColorWhite);
+  text_layer_set_background_color(s_date_layer, GColorClear);
+  text_layer_set_font(s_date_layer, status_font);
+  text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
+
+  //s_cal_icon_layer = text_layer_create(GRect(89, bounds.size.h-19, 12, 11));//For 9 pt Gothic
+  s_cal_icon_layer = text_layer_create(GRect(cal_icon_text_x, cal_icon_text_y, 12, 16));
+  text_layer_set_text_color(s_cal_icon_layer, GColorBlack);
+  text_layer_set_background_color(s_cal_icon_layer, GColorClear);
+  text_layer_set_font(s_cal_icon_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+  text_layer_set_text_alignment(s_cal_icon_layer, GTextAlignmentCenter);
+  
+ //Need to Set these positions and sizes in layout fucntion and get rid of display test here
+ #if PBL_DISPLAY_HEIGHT == 228
+  s_time_1_layer = bitmap_layer_create(GRect(54, 65 + offset_y, 24, 48));
+  s_time_2_layer = bitmap_layer_create(GRect(76, 65 + offset_y, 24, 48));
+  s_time_3_layer = bitmap_layer_create(GRect(102, 65 + offset_y, 24, 48));
+  s_time_4_layer = bitmap_layer_create(GRect(124, 65 + offset_y, 24, 48));
+#elif PBL_DISPLAY_HEIGHT == 180
+  s_time_1_layer = bitmap_layer_create(GRect(45, offset_y, 24, 48));
+  s_time_2_layer = bitmap_layer_create(GRect(66, offset_y, 24, 48));
+  s_time_3_layer = bitmap_layer_create(GRect(93, offset_y, 24, 48));
+  s_time_4_layer = bitmap_layer_create(GRect(115, offset_y, 24, 48));
+#else
+  s_time_1_layer = bitmap_layer_create(GRect(38, 65 + offset_y, 17, 34));
+  s_time_2_layer = bitmap_layer_create(GRect(53, 65 + offset_y, 17, 34));
+  s_time_3_layer = bitmap_layer_create(GRect(73, 65 + offset_y, 17, 34));
+  s_time_4_layer = bitmap_layer_create(GRect(90, 65 + offset_y, 17, 34));
+#endif
+  digit_0_ptr = gbitmap_create_with_resource(RESOURCE_ID_digit_0 );
+  digit_1_ptr = gbitmap_create_with_resource(RESOURCE_ID_digit_1 );
+  digit_2_ptr = gbitmap_create_with_resource(RESOURCE_ID_digit_2 );
+  digit_3_ptr = gbitmap_create_with_resource(RESOURCE_ID_digit_3 );
+  digit_4_ptr = gbitmap_create_with_resource(RESOURCE_ID_digit_4 );
+  digit_5_ptr = gbitmap_create_with_resource(RESOURCE_ID_digit_5 );
+  digit_6_ptr = gbitmap_create_with_resource(RESOURCE_ID_digit_6 );
+  digit_7_ptr = gbitmap_create_with_resource(RESOURCE_ID_digit_7 );
+  digit_8_ptr = gbitmap_create_with_resource(RESOURCE_ID_digit_8 );
+  digit_9_ptr = gbitmap_create_with_resource(RESOURCE_ID_digit_9 );
+
+  bitmap_layer_set_compositing_mode(s_time_1_layer, GCompOpSet );
+  bitmap_layer_set_compositing_mode(s_time_2_layer, GCompOpSet );
+  bitmap_layer_set_compositing_mode(s_time_3_layer, GCompOpSet );
+  bitmap_layer_set_compositing_mode(s_time_4_layer, GCompOpSet );
+  bitmap_layer_set_bitmap(s_time_1_layer,digit_0_ptr);
+  bitmap_layer_set_bitmap(s_time_2_layer,digit_0_ptr);
+  bitmap_layer_set_bitmap(s_time_3_layer,digit_0_ptr);
+  bitmap_layer_set_bitmap(s_time_4_layer,digit_0_ptr);
+  
+  s_ampm_layer = text_layer_create(GRect(ampm_pos_x, ampm_pos_y, 16, 16));
+  text_layer_set_text_color(s_ampm_layer, GColorWhite);
+  text_layer_set_background_color(s_ampm_layer, GColorClear);
+  text_layer_set_font(s_ampm_layer, fonts_get_system_font(FONT_KEY_GOTHIC_09));
+  text_layer_set_text_alignment(s_ampm_layer, GTextAlignmentLeft);
+  
+  handle_bluetooth(connection_service_peek_pebble_app_connection());
+
+  s_battery_layer = text_layer_create(GRect(0, status_position_y, bounds.size.w -14, status_layer_height));
+  text_layer_set_text_color(s_battery_layer, GColorWhite);
+  text_layer_set_background_color(s_battery_layer, GColorBlack);
+  text_layer_set_font(s_battery_layer, status_font); //fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_text_alignment(s_battery_layer, GTextAlignmentRight);
+  text_layer_set_text(s_battery_layer, "--");
+
+  s_status_layer = text_layer_create(GRect(5, status_position_y, 75, status_layer_height));
+  text_layer_set_text_color(s_status_layer, GColorWhite);
+  text_layer_set_background_color(s_status_layer, GColorBlack);
+  text_layer_set_font(s_status_layer, status_font); //fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_text_alignment(s_status_layer, GTextAlignmentLeft);
+  text_layer_set_text(s_status_layer, "webOS");
+}
+
+static void create_display_orig() {
+  APP_LOG(APP_LOG_LEVEL_WARNING, "%s", "create_display called");
+
+  Layer *window_layer = window_get_root_layer(s_main_window);
   GRect bounds = layer_get_frame(window_layer);
 
   APP_LOG(APP_LOG_LEVEL_WARNING, "%s %u", "main_window_load, Alt date fmt: ", alt_date_fmt );
@@ -279,12 +453,34 @@ static void main_window_load(Window *window) {
   status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18); 
   s_long_date_layer = text_layer_create(GRect(weekday_pos_x, weekday_pos_y, 40, status_layer_height));
   status_position_y = -4;  //-6 for gothic 18
-  int8_t connection_position_y = 2;
-  s_bt_conn_layer = bitmap_layer_create(GRect(bounds.size.w - 14, 1, 13, 12)); //was 130
+  connection_position_y = 1;
+  s_bt_conn_layer = bitmap_layer_create(GRect(bounds.size.w - 14, connection_position_y, 13, 12));
   cal_icon_text_x = 127;
   cal_icon_text_y = bounds.size.h-27;
   ampm_pos_x = 53;
   ampm_pos_y = 126;
+#elif PBL_DISPLAY_HEIGHT == 180
+  status_position_y = -1;
+  weekday_pos_x = 98;
+  //use_large_font = true; //grrr
+  if (use_large_font) {
+    status_position_y = -4;
+    status_layer_height = 18;
+    weekday_pos_y = 25;
+    status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18); 
+  } else {
+    status_layer_height = 16;
+    weekday_pos_y = 27;
+    status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14); 
+  }
+  s_long_date_layer = text_layer_create(GRect(weekday_pos_x, weekday_pos_y, 40, status_layer_height));
+  connection_position_y = -1;
+  s_bt_conn_layer = bitmap_layer_create(GRect(bounds.size.w - 14, connection_position_y, 13, 12));
+  cal_icon_text_x = 91;
+  cal_icon_text_y = bounds.size.h-23;
+  //  s_ampm_layer = text_layer_create(GRect(38, 92, 16, 16));
+  ampm_pos_x = 42;
+  ampm_pos_y = 102;
 #else
   status_position_y = -5;
   weekday_pos_x = 66;
@@ -300,8 +496,8 @@ static void main_window_load(Window *window) {
     status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14); 
   }
   s_long_date_layer = text_layer_create(GRect(weekday_pos_x, weekday_pos_y, 40, status_layer_height));
-  int8_t connection_position_y = -3;
-  s_bt_conn_layer = bitmap_layer_create(GRect(bounds.size.w - 14, -1, 13, 12)); //was 130
+  connection_position_y = -1;
+  s_bt_conn_layer = bitmap_layer_create(GRect(bounds.size.w - 14, connection_position_y, 13, 12));
   cal_icon_text_x = 91;
   cal_icon_text_y = bounds.size.h-23;
   //  s_ampm_layer = text_layer_create(GRect(38, 92, 16, 16));
@@ -317,13 +513,13 @@ static void main_window_load(Window *window) {
   
   text_layer_set_text_color(s_long_date_layer, GColorWhite);
   text_layer_set_background_color(s_long_date_layer, GColorClear);
-  text_layer_set_font(s_long_date_layer, status_font);//fonts_get_system_font(FONT_KEY_GOTHIC_09));
+  text_layer_set_font(s_long_date_layer, status_font);
   text_layer_set_text_alignment(s_long_date_layer, GTextAlignmentRight);
   
   s_date_layer = text_layer_create(GRect(0, status_position_y, bounds.size.w, status_layer_height));
   text_layer_set_text_color(s_date_layer, GColorWhite);
   text_layer_set_background_color(s_date_layer, GColorClear);
-  text_layer_set_font(s_date_layer, status_font);//fonts_get_system_font(FONT_KEY_GOTHIC_09));
+  text_layer_set_font(s_date_layer, status_font);
   text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
 
   //s_cal_icon_layer = text_layer_create(GRect(89, bounds.size.h-19, 12, 11));//For 9 pt Gothic
@@ -333,31 +529,24 @@ static void main_window_load(Window *window) {
   text_layer_set_font(s_cal_icon_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
   text_layer_set_text_alignment(s_cal_icon_layer, GTextAlignmentCenter);
   
-  /*
-  s_time_layer = text_layer_create(GRect(0, 62, bounds.size.w, 34));
-  text_layer_set_text_color(s_time_layer, GColorWhite);
-  text_layer_set_background_color(s_time_layer, GColorClear);
-  text_layer_set_font(s_time_layer, flap_font); //FONT_KEY_GOTHIC_28_BOLD //  FONT_KEY_BITHAM_30_BLACK
-  text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
-  */
  //Need to adjust for PTS2 vs legacy screen
  #if PBL_DISPLAY_HEIGHT == 228
-  uint8_t offset_x = 25;
-  uint8_t offset_y = 22;
+  offset_x = 25;
+  offset_y = 22;
   s_time_1_layer = bitmap_layer_create(GRect(54, 65 + offset_y, 24, 48));
   s_time_2_layer = bitmap_layer_create(GRect(76, 65 + offset_y, 24, 48));
   s_time_3_layer = bitmap_layer_create(GRect(102, 65 + offset_y, 24, 48));
   s_time_4_layer = bitmap_layer_create(GRect(124, 65 + offset_y, 24, 48));
 #elif PBL_DISPLAY_HEIGHT == 180
-  uint8_t offset_x = 0;
-  uint8_t offset_y = 16;
-  s_time_1_layer = bitmap_layer_create(GRect(38 + offset_x, 65 + offset_y, 17, 34));
-  s_time_2_layer = bitmap_layer_create(GRect(53 + offset_x, 65 + offset_y, 17, 34));
-  s_time_3_layer = bitmap_layer_create(GRect(73 + offset_x, 65 + offset_y, 17, 34));
-  s_time_4_layer = bitmap_layer_create(GRect(90 + offset_x, 65 + offset_y, 17, 34));
+  offset_x = 0;
+  offset_y = 20;
+  s_time_1_layer = bitmap_layer_create(GRect(49, 65 + offset_y, 17, 34));
+  s_time_2_layer = bitmap_layer_create(GRect(67, 65 + offset_y, 17, 34));
+  s_time_3_layer = bitmap_layer_create(GRect(94, 65 + offset_y, 17, 34));
+  s_time_4_layer = bitmap_layer_create(GRect(112, 65 + offset_y, 17, 34));
 #else
-  uint8_t offset_x = 0;
-  uint8_t offset_y = 0;
+  offset_x = 0;
+  offset_y = 0;
   s_time_1_layer = bitmap_layer_create(GRect(38, 65 + offset_y, 17, 34));
   s_time_2_layer = bitmap_layer_create(GRect(53, 65 + offset_y, 17, 34));
   s_time_3_layer = bitmap_layer_create(GRect(73, 65 + offset_y, 17, 34));
@@ -391,11 +580,6 @@ static void main_window_load(Window *window) {
   text_layer_set_text_alignment(s_ampm_layer, GTextAlignmentLeft);
   }
   
-  s_connection_layer = text_layer_create(GRect(130, connection_position_y, 10, 16));
-  text_layer_set_text_color(s_connection_layer, GColorWhite);
-  text_layer_set_background_color(s_connection_layer, GColorBlack);
-  text_layer_set_font(s_connection_layer, status_font); //fonts_get_system_font(FONT_KEY_GOTHIC_14));
-  text_layer_set_text_alignment(s_connection_layer, GTextAlignmentLeft);
   handle_bluetooth(connection_service_peek_pebble_app_connection());
 
   s_battery_layer = text_layer_create(GRect(0, status_position_y, bounds.size.w -14, status_layer_height));
@@ -411,6 +595,17 @@ static void main_window_load(Window *window) {
   text_layer_set_font(s_status_layer, status_font); //fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_alignment(s_status_layer, GTextAlignmentLeft);
   text_layer_set_text(s_status_layer, "webOS");
+}
+
+static void main_window_load(Window *window) {
+  Layer *window_layer = window_get_root_layer(window);
+  GRect bounds = layer_get_frame(window_layer);
+
+  //set layout
+  //create layers
+  //update display
+
+  create_display();
 
   // Ensures time is displayed immediately (will break if NULL tick event accessed).
   // (This is why it's a good idea to have a separate routine to do the update itself.)
@@ -425,14 +620,11 @@ static void main_window_load(Window *window) {
     .pebble_app_connection_handler = handle_bluetooth
   });
 
-  //Replaced with images so I don't have to distribute font
-  //layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
   if (true || !clock_is_24h_style()) {
   layer_add_child(window_layer, text_layer_get_layer(s_ampm_layer));
   }
   layer_add_child(window_layer, text_layer_get_layer(s_battery_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_status_layer));
-  //layer_add_child(window_layer, text_layer_get_layer(s_connection_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_cal_icon_layer));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_bt_conn_layer));
@@ -454,12 +646,10 @@ static void main_window_unload(Window *window) {
   text_layer_destroy(s_long_date_layer);
   text_layer_destroy(s_date_layer);
   text_layer_destroy(s_cal_icon_layer);
-  //text_layer_destroy(s_time_layer);
   if (true || !clock_is_24h_style()) {
   text_layer_destroy(s_ampm_layer);
   }
   text_layer_destroy(s_status_layer);
-  text_layer_destroy(s_connection_layer);
   text_layer_destroy(s_battery_layer);
   gbitmap_destroy(bmptr);
   bitmap_layer_destroy(mblyr);

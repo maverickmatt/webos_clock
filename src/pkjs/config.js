@@ -32,6 +32,13 @@ module.exports = [
         "messageKey": "LargeFont",
         "label": "Large font",
         "defaultValue": true
+      },
+      {
+        "type": "toggle",
+        "capabilities": [ "PLATFORM_CHALK" ],
+        "messageKey": "LargeFont",
+        "label": "Large font",
+        "defaultValue": true
       }
     ]
   },
