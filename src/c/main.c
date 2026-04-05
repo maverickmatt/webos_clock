@@ -232,11 +232,11 @@ static void set_layout() {
   offset_y = 22;
 #elif PBL_DISPLAY_HEIGHT == 180
   //PTR
-  status_position_y = -1;
+  status_position_y = 1;
   weekday_pos_x = 97;
   if (use_large_font) {
     status_position_y = -4;
-    status_layer_height = 18;
+    status_layer_height = 19;
     weekday_pos_y = 44;
     status_font = fonts_get_system_font(FONT_KEY_GOTHIC_18); 
   } else {
