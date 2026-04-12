@@ -9,7 +9,7 @@
         "capabilities": [
             "configurable"
         ],
-        "displayName": "webOS flip clock card",
+        "displayName": "webOS flip clock",
         "enableMultiJS": true,
         "messageKeys": [
             "DateFmt",
