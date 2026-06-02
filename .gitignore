@@ -1,5 +1,5 @@
 build/*
 .lock*
 *.bak
-node_modules/pebble-clay/dist.zip
+node_modules
 *.zip

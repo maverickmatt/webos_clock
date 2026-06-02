@@ -1,7 +1,7 @@
 {
     "author": "Grabber5.0",
     "dependencies": {
-        "pebble-clay": "^1.0.3"
+        "@rebble/clay": "^1.0.10"
     },
     "keywords": [],
     "name": "webos-clock-card",
